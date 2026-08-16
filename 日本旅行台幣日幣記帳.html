@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>日本旅行記帳</title>
+<style>
+  :root{
+    --bg:#fffaf6;
+    --card:#ffffff;
+    --text:#2f2b2b;
+    --muted:#8a8080;
+    --accent:#e86f61;
+    --accent2:#fff0ea;
+    --line:#eee4df;
+    --good:#4e8a68;
+    --shadow:0 10px 30px rgba(92,58,45,.08);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;
+    background:linear-gradient(180deg,#fff6f1 0%,var(--bg) 36%,#fff 100%);
+    color:var(--text);
+  }
+  .wrap{max-width:640px;margin:auto;padding:18px 14px 90px}
+  h1{font-size:26px;margin:8px 0 2px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:20px;
+    box-shadow:var(--shadow); padding:16px; margin-bottom:14px;
+  }
+  .row{display:flex;gap:10px;align-items:center}
+  .row>*{flex:1}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
+  input,select{
+    width:100%; border:1px solid var(--line); border-radius:13px; padding:12px 12px;
+    font-size:16px;background:#fff;color:var(--text);outline:none;
+  }
+  input:focus,select:focus{border-color:#efb2a8;box-shadow:0 0 0 3px #fff0ed}
+  .money{font-size:28px;font-weight:800;letter-spacing:.2px}
+  .converted{font-size:15px;color:var(--muted);margin-top:5px}
+  .btn{
+    width:100%;border:0;border-radius:14px;padding:13px 16px;font-size:16px;font-weight:700;
+    background:var(--accent);color:white;cursor:pointer;
+  }
+  .btn.secondary{background:var(--accent2);color:var(--accent)}
+  .btn.ghost{background:white;color:var(--text);border:1px solid var(--line)}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{padding:13px;background:#fff8f5;border-radius:15px}
+  .stat small{display:block;color:var(--muted);margin-bottom:5px}
+  .stat strong{font-size:20px}
+  .budgetbar{height:10px;background:#f0e7e3;border-radius:999px;overflow:hidden;margin:10px 0 8px}
+  .budgetfill{height:100%;background:var(--accent);width:0%;transition:.2s}
+  .section-title{font-weight:800;font-size:17px;margin-bottom:10px}
+  .entry{
+    display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--line)
+  }
+  .entry:last-child{border-bottom:0}
+  .icon{width:42px;height:42px;border-radius:13px;background:#fff3ee;display:flex;align-items:center;justify-content:center;font-size:21px}
+  .entry .name{font-weight:700}
+  .entry .meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .entry .amt{text-align:right;font-weight:800}
+  .entry .amt small{display:block;color:var(--muted);font-weight:500;margin-top:3px}
+  .empty{text-align:center;color:var(--muted);padding:18px 0}
+  .topline{display:flex;justify-content:space-between;gap:12px;align-items:center}
+  .pill{background:#fff1ec;color:var(--accent);padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700}
+  .danger{color:#b14c46;border:0;background:none;font-size:12px;cursor:pointer;padding:5px 0}
+  details summary{cursor:pointer;color:var(--muted);font-size:13px}
+  .footer-note{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.6}
+  @media(max-width:420px){.stats{grid-template-columns:1fr}.money{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline">
+    <div>
+      <h1>🇯🇵 日本旅行記帳</h1>
+      <div class="sub">台幣 × 日幣｜旅行期間快速記帳</div>
+    </div>
+    <div class="pill" id="entryCount">0 筆</div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>旅行名稱</label>
+        <input id="tripName" value="日本旅行" />
+      </div>
+      <div>
+        <label>旅行預算（NT$）</label>
+        <input id="budget" type="number" inputmode="decimal" placeholder="30000" />
+      </div>
+    </div>
+    <div style="height:10px"></div>
+    <div class="row">
+      <div>
+        <label>匯率：1 日圓 = 台幣</label>
+        <input id="rate" type="number" inputmode="decimal" step="0.0001" value="0.215" />
+      </div>
+      <div>
+        <label>旅行開始日</label>
+        <input id="startDate" type="date" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">＋ 記一筆</div>
+    <div class="row">
+      <div>
+        <label>幣別</label>
+        <select id="currency">
+          <option value="JPY">¥ 日幣</option>
+          <option value="TWD">NT$ 台幣</option>
+        </select>
+      </div>
+      <div>
+        <label>金額</label>
+        <input id="amount" type="number" inputmode="decimal" placeholder="例如 1280" />
+      </div>
+    </div>
+    <div class="converted" id="converted">≈ NT$ 0</div>
+
+    <div style="height:12px"></div>
+    <div class="row">
+      <div>
+        <label>項目</label>
+        <input id="item" placeholder="例如：拉麵、藥妝、計程車" />
+      </div>
+      <div>
+        <label>分類</label>
+        <select id="category">
+          <option>🍜 餐飲</option>
+          <option>🛍 購物</option>
+          <option>🚗 交通</option>
+          <option>🎫 門票</option>
+          <option>🏨 住宿</option>
+          <option>☕ 咖啡甜點</option>
+          <option>🎁 伴手禮</option>
+          <option>🐱 其他</option>
+        </select>
+      </div>
+    </div>
+    <div style="height:12px"></div>
+    <div class="row">
+      <div>
+        <label>日期</label>
+        <input id="date" type="date" />
+      </div>
+      <div>
+        <label>備註（可空白）</label>
+        <input id="note" placeholder="例如：6 人一起吃" />
+      </div>
+    </div>
+    <div style="height:14px"></div>
+    <button class="btn" id="addBtn">加入記帳</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">旅行支出</div>
+    <div class="stats">
+      <div class="stat">
+        <small>今日支出</small>
+        <strong id="todayTWD">NT$ 0</strong>
+        <div class="converted" id="todayJPY">¥ 0</div>
+      </div>
+      <div class="stat">
+        <small>旅行總支出</small>
+        <strong id="totalTWD">NT$ 0</strong>
+        <div class="converted" id="totalJPY">¥ 0</div>
+      </div>
+    </div>
+    <div style="height:10px"></div>
+    <small id="budgetText" style="color:var(--muted)">尚未設定旅行預算</small>
+    <div class="budgetbar"><div class="budgetfill" id="budgetFill"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="topline">
+      <div class="section-title" style="margin:0">消費明細</div>
+      <button class="btn ghost" style="width:auto;padding:8px 12px;font-size:13px" id="exportBtn">匯出 CSV</button>
+    </div>
+    <div id="entries"></div>
+  </div>
+
+  <details class="card">
+    <summary>資料管理</summary>
+    <div style="height:12px"></div>
+    <button class="btn secondary" id="sampleBtn">加入範例資料</button>
+    <div style="height:8px"></div>
+    <button class="btn ghost" id="clearBtn">清除全部記帳資料</button>
+  </details>
+
+  <div class="footer-note">
+    資料會儲存在這台裝置的瀏覽器中，不會上傳到網路。<br>
+    建議旅行前先測試新增一筆，並定期匯出 CSV 備份。
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const key = 'travelMoneyJPY_TWD_v1';
+let state = JSON.parse(localStorage.getItem(key) || 'null') || {
+  settings:{tripName:'日本旅行',budget:'',rate:0.215,startDate:''},
+  entries:[]
+};
+
+const todayISO = () => {
+  const d = new Date();
+  const tz = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return tz.toISOString().slice(0,10);
+};
+
+function money(n){ return Math.round(Number(n)||0).toLocaleString('zh-TW'); }
+function save(){ localStorage.setItem(key, JSON.stringify(state)); }
+
+function hydrate(){
+  $('tripName').value = state.settings.tripName || '日本旅行';
+  $('budget').value = state.settings.budget || '';
+  $('rate').value = state.settings.rate || 0.215;
+  $('startDate').value = state.settings.startDate || '';
+  $('date').value = todayISO();
+  document.title = (state.settings.tripName || '日本旅行') + '記帳';
+  render();
+}
+
+function syncSettings(){
+  state.settings = {
+    tripName:$('tripName').value.trim() || '日本旅行',
+    budget:$('budget').value,
+    rate:Number($('rate').value) || 0.215,
+    startDate:$('startDate').value
+  };
+  save(); render();
+}
+
+function toTWD(amount,currency){
+  const rate = Number($('rate').value) || .215;
+  return currency==='JPY' ? amount*rate : amount;
+}
+function toJPY(amount,currency){
+  const rate = Number($('rate').value) || .215;
+  return currency==='TWD' ? amount/rate : amount;
+}
+function updateConverted(){
+  const a = Number($('amount').value)||0;
+  const c = $('currency').value;
+  $('converted').textContent = c==='JPY'
+    ? `≈ NT$ ${money(toTWD(a,c))}`
+    : `≈ ¥ ${money(toJPY(a,c))}`;
+}
+
+function addEntry(){
+  const amount = Number($('amount').value);
+  if(!amount || amount<=0){ alert('請輸入金額'); return; }
+  const item = $('item').value.trim() || '未命名支出';
+  const currency = $('currency').value;
+  state.entries.unshift({
+    id:Date.now(),
+    date:$('date').value || todayISO(),
+    item,
+    category:$('category').value,
+    note:$('note').value.trim(),
+    currency,
+    amount,
+    rate:Number($('rate').value)||.215,
+    twd: currency==='JPY' ? amount*(Number($('rate').value)||.215) : amount,
+    jpy: currency==='TWD' ? amount/(Number($('rate').value)||.215) : amount
+  });
+  save();
+  $('amount').value='';
+  $('item').value='';
+  $('note').value='';
+  updateConverted();
+  render();
+}
+
+function deleteEntry(id){
+  state.entries = state.entries.filter(e=>e.id!==id);
+  save(); render();
+}
+
+function render(){
+  const rate = Number($('rate').value)||.215;
+  const totalTWD = state.entries.reduce((s,e)=>s+Number(e.twd||0),0);
+  const totalJPY = state.entries.reduce((s,e)=>s+Number(e.jpy||0),0);
+  const today = todayISO();
+  const todayEntries = state.entries.filter(e=>e.date===today);
+  const todayTWD = todayEntries.reduce((s,e)=>s+Number(e.twd||0),0);
+  const todayJPY = todayEntries.reduce((s,e)=>s+Number(e.jpy||0),0);
+
+  $('entryCount').textContent = `${state.entries.length} 筆`;
+  $('todayTWD').textContent = `NT$ ${money(todayTWD)}`;
+  $('todayJPY').textContent = `¥ ${money(todayJPY)}`;
+  $('totalTWD').textContent = `NT$ ${money(totalTWD)}`;
+  $('totalJPY').textContent = `¥ ${money(totalJPY)}`;
+
+  const budget = Number($('budget').value)||0;
+  if(budget>0){
+    const left = budget-totalTWD;
+    const pct = Math.min(100,Math.max(0,totalTWD/budget*100));
+    $('budgetFill').style.width = pct+'%';
+    $('budgetText').textContent = left>=0
+      ? `預算 NT$ ${money(budget)}｜剩餘 NT$ ${money(left)}`
+      : `預算 NT$ ${money(budget)}｜已超出 NT$ ${money(Math.abs(left))}`;
+  }else{
+    $('budgetFill').style.width='0%';
+    $('budgetText').textContent='尚未設定旅行預算';
+  }
+
+  const box = $('entries');
+  if(!state.entries.length){
+    box.innerHTML='<div class="empty">還沒有記帳資料 ✈️</div>';
+    return;
+  }
+  box.innerHTML = state.entries.map(e=>{
+    const icon = e.category.split(' ')[0];
+    const primary = e.currency==='JPY' ? `¥ ${money(e.amount)}` : `NT$ ${money(e.amount)}`;
+    const second = e.currency==='JPY' ? `NT$ ${money(e.twd)}` : `¥ ${money(e.jpy)}`;
+    return `
+      <div class="entry">
+        <div class="icon">${icon}</div>
+        <div>
+          <div class="name">${escapeHtml(e.item)}</div>
+          <div class="meta">${e.date} · ${escapeHtml(e.category.replace(icon,'').trim())}${e.note ? ' · '+escapeHtml(e.note):''}</div>
+          <button class="danger" onclick="deleteEntry(${e.id})">刪除</button>
+        </div>
+        <div class="amt">${primary}<small>${second}</small></div>
+      </div>`;
+  }).join('');
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function exportCSV(){
+  if(!state.entries.length){ alert('目前沒有資料可以匯出'); return; }
+  const rows=[['日期','項目','分類','原幣別','原金額','換算台幣','換算日幣','記帳匯率','備註']];
+  [...state.entries].reverse().forEach(e=>rows.push([
+    e.date,e.item,e.category,e.currency,e.amount,Math.round(e.twd),Math.round(e.jpy),e.rate,e.note||''
+  ]));
+  const csv = '\uFEFF'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=(state.settings.tripName||'日本旅行')+'_記帳.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+$('addBtn').addEventListener('click',addEntry);
+$('amount').addEventListener('input',updateConverted);
+$('currency').addEventListener('change',updateConverted);
+['tripName','budget','rate','startDate'].forEach(id=>{
+  $(id).addEventListener('change',syncSettings);
+  $(id).addEventListener('input',()=>{ if(id==='rate') updateConverted(); });
+});
+$('exportBtn').addEventListener('click',exportCSV);
+$('clearBtn').addEventListener('click',()=>{
+  if(confirm('確定要清除所有記帳資料嗎？這個動作無法復原。')){
+    state.entries=[]; save(); render();
+  }
+});
+$('sampleBtn').addEventListener('click',()=>{
+  const r=Number($('rate').value)||.215;
+  const samples=[
+    {item:'拉麵',category:'🍜 餐飲',amount:1280,currency:'JPY',note:''},
+    {item:'計程車',category:'🚗 交通',amount:2400,currency:'JPY',note:'機場到飯店'},
+    {item:'藥妝',category:'🛍 購物',amount:4840,currency:'JPY',note:''}
+  ];
+  samples.forEach((s,i)=>state.entries.unshift({
+    id:Date.now()+i,date:todayISO(),rate:r,...s,
+    twd:s.currency==='JPY'?s.amount*r:s.amount,
+    jpy:s.currency==='TWD'?s.amount/r:s.amount
+  }));
+  save();render();
+});
+hydrate();
+updateConverted();
+</script>
+</body>
+</html>
